@@ -1,6 +1,6 @@
 blueprint:
   name: Sunricher ZG2819S-RGBW
-  source_url: https://github.com/eightam/home_assistant_blueprints/tree/main/sunricher_ZG2819S_RGBW.yaml
+  source_url: https://github.com/eightam/home_assistant_blueprints/blob/main/sunricher_ZG2819S_RGBW.yaml
   description: Control lights with a iluminize 511.344 RGBW Remote
   domain: automation
   input:
