@@ -1,0 +1,160 @@
+blueprint:
+  name: Sunricher ZG2819S-RGBW
+  source_url: https://github.com/eightam/home_assistant_blueprints/tree/main/sunricher_ZG2819S_RGBW.yaml
+  description: Control lights with a iluminize 511.344 RGBW Remote
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: Sunricher 511.344 remote to use
+      selector:
+        device:
+          integration: zha
+          manufacturer: Sunricher
+          model: ZG2819S-RGBW
+          multiple: false
+          
+    target_light:
+      name: Light(s)
+      description: The light(s) to control
+      selector:
+        target:
+          entity:
+          - domain:
+            - light
+
+    endpoint:
+      name: Endpoint 1234
+      description: the Endpoint to listen to
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 4
+
+    scene_1:
+      name: ButtonS1
+      description: The scene to be triggered when S1 button is pressed
+      selector:
+        entity:
+          domain:
+          - scene
+          multiple: false
+    scene_2:
+      name: ButtonS2
+      description: The scene to be triggered when S2 is pressed
+      selector:
+        entity:
+          domain:
+          - scene
+          multiple: false
+    scene_3:
+      name: ButtonS3
+      description: The scene to be triggered when S3 is pressed
+      selector:
+        entity:
+          domain:
+          - scene
+          multiple: false
+
+
+mode: restart
+max_exceeded: silent
+
+  
+trigger:
+- platform: event
+  event_type: zha_event
+  event_data:
+    device_id: !input remote
+    endpoint_id: !input endpoint
+    
+action:
+- variables:
+    command: '{{ trigger.event.data.command }}'
+    cluster_id: '{{ trigger.event.data.cluster_id }}'
+- choose:
+  - conditions:
+    - '{{ command == "on" }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+
+        
+  - conditions:
+    - '{{ command == "off" }}'
+    sequence:
+    - service: light.turn_off
+      target: !input 'target_light'
+      
+  - conditions:
+    - '{{ command == "move_to_color" }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        xy_color:
+        - '{{ trigger.event.data.params.color_x /100000 }}'
+        - '{{ trigger.event.data.params.color_y /100000 }}'
+      
+  - conditions:
+    - '{{ command == "move_to_color_temp" }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        color_temp: '{{ trigger.event.data.params.color_temp_mireds }}'
+        transition: '{{ trigger.event.data.params.transition_time }}'
+
+  - conditions:
+      - condition: and
+        conditions: 
+        - '{{ command == "step_with_on_off" }}'
+        - '{{ trigger.event.data.params.step_mode == 0 }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        brightness_step: '{{ trigger.event.data.params.step_size }}'
+      
+  - conditions:
+      - condition: and
+        conditions: 
+        - '{{ command == "step_with_on_off" }}'
+        - '{{ trigger.event.data.params.step_mode == 1 }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        brightness_step: '{{ trigger.event.data.params.step_size * -1}}'
+        
+        
+  - conditions:
+      - condition: and
+        conditions: 
+        - '{{ command == "recall" }}'
+        - '{{ trigger.event.data.params.scene_id == 1 }}'
+    sequence:
+    - service: scene.turn_on
+      target:
+        entity_id: !input 'scene_1'
+        
+  - conditions:
+      - condition: and
+        conditions: 
+        - '{{ command == "recall" }}'
+        - '{{ trigger.event.data.params.scene_id == 2 }}'
+    sequence:
+    - service: scene.turn_on
+      target:
+        entity_id: !input 'scene_2'
+      
+  - conditions:
+      - condition: and
+        conditions: 
+        - '{{ command == "recall" }}'
+        - '{{ trigger.event.data.params.scene_id == 3 }}'
+    sequence:
+    - service: scene.turn_on
+      target:
+        entity_id: !input 'scene_3'
