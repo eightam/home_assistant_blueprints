@@ -94,8 +94,9 @@ action:
       target: !input 'target_light'
       data:
         xy_color:
-        - '{{ trigger.event.data.params.color_x /100000 }}'
-        - '{{ trigger.event.data.params.color_y /100000 }}'
+          - '{{ trigger.event.data.params.color_x / 65535 }}'
+          - '{{ trigger.event.data.params.color_y / 65535 }}'
+        transition: '{{ trigger.event.data.params.transition_time / 10 }}'
       
   - conditions:
     - '{{ command == "move_to_color_temp" }}'
