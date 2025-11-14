@@ -1,18 +1,21 @@
 blueprint:
   name: Sunricher ZG2819S-RGBW
   source_url: https://github.com/eightam/home_assistant_blueprints/blob/main/sunricher_ZG2819S_RGBW.yaml
-  description: Control lights with a iluminize 511.344 RGBW Remote
+  description: Control lights with a iluminize 511.344 or Sunricher ZG2819S-RGBW Remote
   domain: automation
   input:
     remote:
       name: Remote
-      description: Sunricher 511.344 remote to use
+      description: Sunricher or iIuminize ZG2819S-RGBW remote to use
       selector:
         device:
           integration: zha
-          manufacturer: Sunricher
-          model: ZG2819S-RGBW
           multiple: false
+          filter:
+            - manufacturer: Sunricher
+              model: ZG2819S-RGBW
+            - manufacturer: iIuminize
+              model: ZG2819S-RGBW
           
     target_light:
       name: Light(s)
@@ -128,6 +131,35 @@ action:
       target: !input 'target_light'
       data:
         brightness_step: '{{ trigger.event.data.params.step_size * -1}}'
+
+  # NEW: Step command for additional brightness control
+  - conditions:
+    - '{{ command == "step" }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        brightness_step_pct: >
+          {% if trigger.event.data.params.step_mode == 0 %}
+            {{ (trigger.event.data.params.step_size / 255 * 100) | int }}
+          {% else %}
+            {{ -((trigger.event.data.params.step_size / 255 * 100) | int) }}
+          {% endif %}
+        transition: '{{ trigger.event.data.params.transition_time / 10 }}'
+
+  # NEW: Move Hue command for continuous color rotation
+  - conditions:
+    - '{{ command == "move_hue" }}'
+    sequence:
+    - service: light.turn_on
+      target: !input 'target_light'
+      data:
+        effect: >
+          {% if trigger.event.data.params.move_mode == 1 %}
+            colorloop
+          {% else %}
+            none
+          {% endif %}
         
         
   - conditions:
